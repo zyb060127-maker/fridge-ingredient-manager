@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>冰箱食材管家 🧊</title>
+<style>
+  :root{
+    --bg:#f2f5f4;
+    --card:#ffffff;
+    --primary:#10b981;
+    --primary-dark:#059669;
+    --text:#1f2937;
+    --muted:#6b7280;
+    --line:#e5e7eb;
+    --danger:#ef4444;
+    --warn:#f59e0b;
+    --ok:#10b981;
+    --radius:16px;
+    --shadow:0 6px 18px rgba(17,24,39,.06);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    margin:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    line-height:1.6;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:16px 16px 90px}
+  header.app{
+    background:linear-gradient(135deg,#10b981,#0ea5e9);
+    color:#fff;border-radius:20px;padding:22px 20px;margin-bottom:16px;
+    box-shadow:var(--shadow);
+  }
+  header.app h1{margin:0;font-size:24px;letter-spacing:.5px}
+  header.app p{margin:6px 0 0;opacity:.92;font-size:14px}
+  .stats{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+  .stat{flex:1;min-width:90px;background:rgba(255,255,255,.16);border-radius:12px;padding:10px 12px;text-align:center}
+  .stat b{display:block;font-size:22px;line-height:1.1}
+  .stat span{font-size:12px;opacity:.9}
+
+  .tabs{display:flex;gap:8px;margin-bottom:14px;position:sticky;top:8px;z-index:5}
+  .tab{
+    flex:1;border:none;background:var(--card);border-radius:12px;padding:12px 8px;
+    font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;box-shadow:var(--shadow);
+    transition:.15s;
+  }
+  .tab.active{background:var(--primary);color:#fff;box-shadow:0 6px 16px rgba(16,185,129,.35)}
+  .tab small{display:block;font-weight:400;font-size:11px;opacity:.75}
+
+  .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px}
+  .card h2{margin:0 0 12px;font-size:16px}
+  .sub{color:var(--muted);font-size:13px;margin-top:-8px;margin-bottom:12px}
+
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  .grow{flex:1;min-width:0}
+  input[type=text],input[type=date],select{
+    width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:12px;
+    font-size:15px;background:#fff;color:var(--text);outline:none;
+  }
+  input:focus,select:focus{border-color:var(--primary)}
+  .btn{
+    border:none;cursor:pointer;font-size:14px;font-weight:600;border-radius:12px;
+    padding:11px 18px;transition:.15s;white-space:nowrap;
+  }
+  .btn-primary{background:var(--primary);color:#fff}
+  .btn-primary:hover{background:var(--primary-dark)}
+  .btn-primary:active{transform:scale(.97)}
+  .btn-ghost{background:#f3f4f6;color:var(--text)}
+  .btn-ghost:hover{background:#e5e7eb}
+  .btn-sm{padding:6px 10px;font-size:12px;border-radius:9px}
+  .btn-danger{background:#fee2e2;color:var(--danger)}
+
+  .toggle-row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-bottom:12px;cursor:pointer;user-select:none}
+  .toggle-row input{width:auto}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .chip{
+    display:inline-flex;align-items:center;background:#f3f4f6;border-radius:999px;
+    padding:5px 12px;font-size:13px;gap:6px;
+  }
+  .chip .x{cursor:pointer;color:var(--muted);font-weight:700;line-height:1}
+  .chip .x:hover{color:var(--danger)}
+
+  .ing-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+  .ing{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fafafa}
+  .ing .dot{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;background:#eef2ff}
+  .ing .info{flex:1;min-width:0}
+  .ing .name{font-weight:600;font-size:15px}
+  .ing .meta{font-size:12px;color:var(--muted)}
+  .badge{font-size:11px;padding:2px 8px;border-radius:999px;font-weight:600;white-space:nowrap}
+  .badge.ok{background:#d1fae5;color:#047857}
+  .badge.warn{background:#fef3c7;color:#b45309}
+  .badge.danger{background:#fee2e2;color:#b91c1c}
+  .badge.gray{background:#e5e7eb;color:#4b5563}
+  .badge.cat{background:#e0f2fe;color:#0369a1}
+
+  .rec{display:flex;align-items:flex-start;gap:12px;border:1px solid var(--line);border-radius:14px;padding:13px;background:#fff;cursor:pointer;transition:.15s;margin-bottom:10px}
+  .rec:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
+  .rec .emoji{font-size:30px;flex-shrink:0;line-height:1.2}
+  .rec .body{flex:1;min-width:0}
+  .rec .rname{font-weight:700;font-size:16px}
+  .rec .rmeta{font-size:12px;color:var(--muted);margin:3px 0}
+  .rec .missing{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;align-items:center}
+  .miss-chip{font-size:11px;padding:2px 8px;border-radius:999px;background:#fef2f2;color:#dc2626;font-weight:600}
+  .have-chip{font-size:11px;padding:2px 8px;border-radius:999px;background:#ecfdf5;color:#059669}
+  .matchbar{font-size:12px;color:var(--muted);margin-top:6px}
+  .score-badge{
+    flex-shrink:0;align-self:center;padding:6px 10px;border-radius:10px;font-size:13px;font-weight:700;
+  }
+  .score-badge.done{background:var(--ok);color:#fff}
+  .score-badge.short{background:var(--warn);color:#fff}
+  .score-badge.far{background:#f3f4f6;color:var(--muted)}
+
+  .search{position:relative;margin-bottom:12px}
+  .search input{padding-left:38px}
+  .search::before{content:"🔍";position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px}
+  .filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .fbtn{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 13px;font-size:13px;cursor:pointer;color:var(--muted)}
+  .fbtn.active{background:var(--primary);border-color:var(--primary);color:#fff}
+
+  .empty{text-align:center;color:var(--muted);padding:34px 10px;font-size:14px}
+  .empty .big{font-size:42px;display:block;margin-bottom:8px}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(17,24,39,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center;padding:0}
+  .modal{
+    background:#fff;width:100%;max-width:640px;max-height:88vh;overflow:auto;
+    border-radius:20px 20px 0 0;padding:20px 20px 34px;animation:up .25s ease;
+  }
+  @keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:translateY(0);opacity:1}}
+  .modal .close{float:right;border:none;background:#f3f4f6;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;color:var(--muted)}
+  .modal h2{margin:0;font-size:21px;display:flex;align-items:center;gap:10px}
+  .modal .lead{color:var(--muted);font-size:13px;margin:8px 0 14px;display:flex;gap:8px;flex-wrap:wrap}
+  .tag{font-size:11px;background:#f3f4f6;border-radius:999px;padding:3px 9px;color:#4b5563}
+  .ing-line{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;font-size:14px;margin-bottom:5px}
+  .ing-line.have{background:#ecfdf5}
+  .ing-line.miss{background:#fef2f2}
+  .ing-line.staple{background:#f0f9ff}
+  .ing-line .amt{margin-left:auto;color:var(--muted);font-size:13px}
+  .steps{margin-top:12px}
+  .steps ol{margin:8px 0 0;padding-left:22px}
+  .steps li{margin-bottom:7px}
+  .tip{margin-top:12px;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:10px 12px;font-size:13px;color:#92400e}
+  .hidden{display:none!important}
+  .h3{font-size:14px;font-weight:700;margin:18px 0 8px;color:var(--text)}
+  @media(min-width:640px){
+    .modal{border-radius:20px;margin-bottom:20px}
+    .modal-bg{padding:24px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="app">
+    <h1>🧊 冰箱食材管家</h1>
+    <p>录入家里现有的食材，自动推荐能做的菜，临期有提醒，减少浪费。</p>
+    <div class="stats">
+      <div class="stat"><b id="statCount">0</b><span>种食材</span></div>
+      <div class="stat"><b id="statCook">0</b><span>可做的菜</span></div>
+      <div class="stat"><b id="statSoon">0</b><span>临期/过期</span></div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="ingredients">🥬 我的食材<small>录入 &amp; 管理</small></button>
+    <button class="tab" data-tab="suggest">🍳 能做啥菜<small>智能推荐</small></button>
+    <button class="tab" data-tab="library">📖 菜谱库<small>全部菜品</small></button>
+  </div>
+
+  <!-- 食材面板 -->
+  <section id="panel-ingredients" class="panel">
+    <div class="card">
+      <h2>添加食材</h2>
+      <div class="row">
+        <select id="catSelect" style="flex:0 0 96px">
+          <option>蔬菜</option>
+          <option>肉类</option>
+          <option>禽蛋</option>
+          <option>水产</option>
+          <option>豆制品</option>
+          <option>主食</option>
+          <option>调料</option>
+          <option>水果</option>
+          <option>其他</option>
+        </select>
+        <input type="text" id="ingInput" class="grow" placeholder="食材名，如：西红柿" list="ingSuggest">
+        <button class="btn btn-primary" id="addBtn">添加</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <select id="storeSelect" style="flex:1 1 128px">
+          <option value="chill">🧊 冰箱冷藏</option>
+          <option value="freeze">❄️ 冰箱冷冻</option>
+          <option value="room">🏠 常温(不放冰箱)</option>
+        </select>
+        <input type="number" id="shelfInput" class="grow" placeholder="保质期(天)" min="1" title="填天数自动算出到期日">
+        <input type="date" id="expInput" class="grow" title="或直接选到期日">
+      </div>
+      <datalist id="ingSuggest"></datalist>
+    </div>
+
+    <div class="card">
+      <div class="toggle-row">
+        <label for="assumeStaples"><input type="checkbox" id="assumeStaples" checked> 已常备调料（盐、糖、油、生抽、葱姜蒜等）自动视为已有</label>
+      </div>
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <h2 style="margin:0">食材清单</h2>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" id="exportBtn">导出</button>
+          <button class="btn btn-ghost btn-sm" id="importBtn">导入</button>
+        </div>
+      </div>
+      <div class="search" style="margin-top:12px"><input type="text" id="ingFilter" placeholder="搜索食材…"></div>
+      <div id="ingList" class="ing-list"></div>
+    </div>
+  </section>
+
+  <!-- 推荐面板 -->
+  <section id="panel-suggest" class="panel hidden">
+    <p class="sub" style="margin:4px 0 12px;text-align:center">按「现有食材匹配度」排序，越靠前越容易做</p>
+    <div id="suggestList"></div>
+  </section>
+
+  <!-- 菜谱库面板 -->
+  <section id="panel-library" class="panel hidden">
+    <div class="search"><input type="text" id="libSearch" placeholder="搜菜名或食材，如：鸡蛋"></div>
+    <div class="filters" id="libFilters"></div>
+    <div id="libList"></div>
+  </section>
+</div>
+
+<div class="modal-bg hidden" id="modalBg">
+  <div class="modal" id="modalBox">
+    <button class="close" id="modalClose">✕</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+<script>
+/* ===== 数据 ===== */
+const STAPLES = new Set(['盐','糖','冰糖','食用油','生抽','老抽','料酒','醋','白醋','香醋','蚝油','淀粉','香油','白胡椒粉','蜂蜜','葱','姜','蒜','鸡精']);
+
+const RECIPES = [
+  {id:1,emoji:'🍅',name:'西红柿炒鸡蛋',cat:'快手菜',diff:'简单',time:'10分钟',ingredients:[{n:'西红柿',a:'2个'},{n:'鸡蛋',a:'3个'},{n:'葱花',a:'少许',req:false},{n:'糖',a:'1勺'},{n:'盐'},{n:'食用油'}],
+   steps:['鸡蛋打散加少许盐，炒熟盛出；','西红柿切块下锅炒出汁；','倒回鸡蛋，加糖、盐翻炒均匀；','撒葱花出锅。'],tip:'西红柿用开水烫一下更好去皮。'},
+  {id:2,emoji:'🥔',name:'青椒土豆丝',cat:'快手菜',diff:'简单',time:'12分钟',ingredients:[{n:'土豆',a:'2个'},{n:'青椒',a:'1个'},{n:'蒜'},{n:'干辣椒',a:'适量',req:false},{n:'醋'},{n:'盐'},{n:'食用油'}],
+   steps:['土豆、青椒切丝，土豆丝泡水去淀粉；','热油爆香蒜和干辣椒；','下土豆丝大火快炒，加醋、盐；','下青椒丝翻炒断生出锅。'],tip:'土豆丝泡水10分钟更脆爽。'},
+  {id:3,emoji:'🍗',name:'可乐鸡翅',cat:'硬菜',diff:'简单',time:'25分钟',ingredients:[{n:'鸡翅',a:'8个'},{n:'可乐',a:'1罐'},{n:'姜'},{n:'料酒'},{n:'生抽'},{n:'老抽'},{n:'食用油'}],
+   steps:['鸡翅两面划刀，冷水下锅加料酒焯水；','热油把鸡翅煎到两面金黄；','倒入可乐没过鸡翅，加生抽、老抽、姜；','中小火收汁至浓稠。'],tip:'收汁时勤翻动防止糊锅。'},
+  {id:4,emoji:'🌶️',name:'麻婆豆腐',cat:'下饭菜',diff:'中等',time:'15分钟',ingredients:[{n:'豆腐',a:'1块'},{n:'猪肉末',a:'100g'},{n:'豆瓣酱',a:'1勺'},{n:'花椒',a:'适量',req:false},{n:'蒜'},{n:'姜'},{n:'淀粉'},{n:'食用油'}],
+   steps:['豆腐切块焯水备用；','炒香肉末，下豆瓣酱、姜蒜炒出红油；','加水烧开，下豆腐煮3分钟；','勾芡、撒花椒，出锅。'],tip:'豆瓣酱有咸味，少放盐。'},
+  {id:5,emoji:'🥩',name:'红烧肉',cat:'硬菜',diff:'中等',time:'60分钟',ingredients:[{n:'五花肉',a:'500g'},{n:'冰糖',a:'适量'},{n:'生抽'},{n:'老抽'},{n:'姜'},{n:'料酒'},{n:'八角',a:'2个'},{n:'香叶',a:'2片',req:false}],
+   steps:['五花肉切块焯水；','小火熬冰糖至焦糖色，下肉块裹匀上色；','加生抽、老抽、料酒、姜、八角、香叶；','加开水没过肉，小火炖50分钟收汁。'],tip:'一定要加热水，肉才软烂。'},
+  {id:6,emoji:'🥜',name:'宫保鸡丁',cat:'下饭菜',diff:'中等',time:'20分钟',ingredients:[{n:'鸡胸肉',a:'300g'},{n:'花生米',a:'适量'},{n:'干辣椒',a:'适量'},{n:'花椒',a:'适量',req:false},{n:'黄瓜',a:'半根'},{n:'胡萝卜',a:'半根'},{n:'生抽'},{n:'醋'},{n:'糖'},{n:'淀粉'},{n:'食用油'}],
+   steps:['鸡胸切丁，用生抽、淀粉腌10分钟；','调碗汁：生抽+醋+糖+淀粉+水；','爆香干辣椒花椒，下鸡丁炒变色；','下黄瓜胡萝卜丁，倒碗汁收浓，撒花生米。'],tip:'花生米最后放更脆。'},
+  {id:7,emoji:'🥕',name:'鱼香肉丝',cat:'下饭菜',diff:'中等',time:'20分钟',ingredients:[{n:'猪里脊',a:'300g'},{n:'木耳',a:'适量'},{n:'胡萝卜',a:'半根'},{n:'青椒',a:'1个'},{n:'豆瓣酱',a:'1勺'},{n:'醋'},{n:'糖'},{n:'蒜'},{n:'姜'},{n:'淀粉'},{n:'生抽'}],
+   steps:['里脊切丝，加生抽、淀粉腌制；','炒香豆瓣酱、姜蒜；','下肉丝炒散，加胡萝卜、木耳、青椒；','倒糖醋汁翻炒出锅。'],tip:'糖醋比按1:1更经典。'},
+  {id:8,emoji:'🥦',name:'蒜蓉西兰花',cat:'快手菜',diff:'简单',time:'8分钟',ingredients:[{n:'西兰花',a:'1个'},{n:'蒜',a:'3瓣'},{n:'食用油'},{n:'盐'},{n:'蚝油'}],
+   steps:['西兰花掰小朵焯水；','热油爆香蒜末；','下西兰花大火炒，加盐、蚝油翻匀。'],tip:'焯水时加几滴油颜色更绿。'},
+  {id:9,emoji:'🥬',name:'蒜蓉生菜',cat:'快手菜',diff:'简单',time:'5分钟',ingredients:[{n:'生菜',a:'1把'},{n:'蒜'},{n:'食用油'},{n:'蚝油'}],
+   steps:['生菜洗净焯水摆盘；','热油爆香蒜末，加蚝油和少许水；','把蒜蓉汁淋在生菜上。'],tip:'生菜焯10秒即可，久了不脆。'},
+  {id:10,emoji:'🍲',name:'番茄牛腩',cat:'硬菜',diff:'中等',time:'90分钟',ingredients:[{n:'牛腩',a:'500g'},{n:'西红柿',a:'3个'},{n:'洋葱',a:'半个'},{n:'姜'},{n:'八角',a:'2个',req:false},{n:'生抽'},{n:'料酒'},{n:'盐'}],
+   steps:['牛腩切块焯水；','炒香洋葱、姜，加西红柿炒出汁；','下牛腩，加生抽、料酒、八角；','加水小火炖80分钟，加盐收汁。'],tip:'牛腩炖软后再放盐。'},
+  {id:11,emoji:'🍖',name:'糖醋排骨',cat:'硬菜',diff:'中等',time:'40分钟',ingredients:[{n:'排骨',a:'500g'},{n:'冰糖',a:'适量'},{n:'醋'},{n:'生抽'},{n:'料酒'},{n:'姜'},{n:'食用油'}],
+   steps:['排骨焯水；','炒糖色后下排骨翻炒上色；','加料酒、生抽、醋、姜和水；','小火焖30分钟，大火收汁。'],tip:'醋分两次放，出锅前再加一次提香。'},
+  {id:12,emoji:'🦐',name:'白灼虾',cat:'快手菜',diff:'简单',time:'10分钟',ingredients:[{n:'鲜虾',a:'500g'},{n:'姜'},{n:'蒜'},{n:'生抽'},{n:'食用油'}],
+   steps:['虾洗净挑去虾线；','水开下姜片和虾，煮至变红捞出；','蒜末爆香加生抽做蘸汁。'],tip:'虾煮2-3分钟即可，老了发柴。'},
+  {id:13,emoji:'🥚',name:'蒸蛋羹',cat:'快手菜',diff:'简单',time:'15分钟',ingredients:[{n:'鸡蛋',a:'3个'},{n:'温水',a:'适量'},{n:'盐'},{n:'生抽'},{n:'香油'},{n:'葱花',a:'少许',req:false}],
+   steps:['鸡蛋打散，加1.5倍温水、少许盐搅匀；','过筛去泡，盖保鲜膜；','水开上锅蒸10分钟；','淋生抽、香油，撒葱花。'],tip:'用温水蒸蛋更嫩滑。'},
+  {id:14,emoji:'🥓',name:'回锅肉',cat:'下饭菜',diff:'中等',time:'25分钟',ingredients:[{n:'五花肉',a:'300g'},{n:'蒜苗',a:'2根'},{n:'豆瓣酱',a:'1勺'},{n:'生抽'},{n:'甜面酱',a:'半勺'},{n:'姜'}],
+   steps:['五花肉整块煮至八成熟切片；','下锅煸炒出油呈灯盏窝状；','下豆瓣酱、姜、甜面酱炒香；','加蒜苗段翻炒断生。'],tip:'肉煮后放凉再切更成形。'},
+  {id:15,emoji:'🍄',name:'小鸡炖蘑菇',cat:'硬菜',diff:'中等',time:'60分钟',ingredients:[{n:'鸡',a:'半只'},{n:'香菇',a:'8朵'},{n:'姜'},{n:'八角',a:'2个',req:false},{n:'生抽'},{n:'料酒'}],
+   steps:['鸡块焯水，香菇泡发；','煸香姜片，下鸡块炒至微黄；','加生抽、料酒、八角和香菇；','加水炖40分钟收汁。'],tip:'用泡香菇的水炖更香。'},
+  {id:16,emoji:'🐟',name:'清蒸鲈鱼',cat:'硬菜',diff:'简单',time:'25分钟',ingredients:[{n:'鲈鱼',a:'1条'},{n:'姜'},{n:'葱'},{n:'蒸鱼豉油',a:'2勺'},{n:'食用油'},{n:'料酒'}],
+   steps:['鲈鱼两面切花刀，抹料酒摆姜片；','水开上锅蒸8分钟；','倒掉汁水，铺葱丝；','淋蒸鱼豉油，浇热油。'],tip:'蒸鱼一定要水开后下锅。'},
+  {id:17,emoji:'🥒',name:'凉拌黄瓜',cat:'凉菜',diff:'简单',time:'8分钟',ingredients:[{n:'黄瓜',a:'2根'},{n:'蒜'},{n:'醋'},{n:'生抽'},{n:'辣椒油',a:'适量',req:false},{n:'糖'},{n:'盐'}],
+   steps:['黄瓜拍碎切段；','加蒜末、盐、糖、生抽、醋；','按口味淋辣椒油拌匀。'],tip:'拍黄瓜比切得更入味。'},
+  {id:18,emoji:'🍚',name:'蛋炒饭',cat:'主食',diff:'简单',time:'10分钟',ingredients:[{n:'米饭',a:'1碗'},{n:'鸡蛋',a:'2个'},{n:'火腿肠',a:'1根',req:false},{n:'葱花',a:'少许',req:false},{n:'盐'},{n:'食用油'},{n:'生抽',a:'少许',req:false}],
+   steps:['鸡蛋炒散盛出；','下米饭炒散；','倒回鸡蛋，加火腿丁；','加盐、生抽、葱花翻匀。'],tip:'隔夜饭炒出来粒粒分明。'},
+  {id:19,emoji:'🍅',name:'番茄蛋汤',cat:'汤羹',diff:'简单',time:'10分钟',ingredients:[{n:'西红柿',a:'1个'},{n:'鸡蛋',a:'2个'},{n:'葱花',a:'少许',req:false},{n:'盐'},{n:'香油'},{n:'食用油'}],
+   steps:['西红柿切块炒出汁；','加开水烧开；','淋入蛋液成蛋花；','加盐、香油、葱花。'],tip:'蛋液画圈淋入更漂亮。'},
+  {id:20,emoji:'🥣',name:'紫菜蛋花汤',cat:'汤羹',diff:'简单',time:'8分钟',ingredients:[{n:'紫菜',a:'适量'},{n:'鸡蛋',a:'2个'},{n:'葱花',a:'少许',req:false},{n:'盐'},{n:'香油'}],
+   steps:['水烧开下紫菜；','淋入蛋液煮成蛋花；','加盐、香油、葱花出锅。'],tip:'紫菜后放口感更好。'},
+  {id:21,emoji:'🥄',name:'酸辣汤',cat:'汤羹',diff:'简单',time:'15分钟',ingredients:[{n:'豆腐',a:'半块'},{n:'木耳',a:'适量'},{n:'鸡蛋',a:'1个'},{n:'胡萝卜',a:'半根'},{n:'醋'},{n:'白胡椒粉',a:'适量'},{n:'淀粉'},{n:'香油'}],
+   steps:['豆腐、木耳、胡萝卜切丝；','加水烧开下食材煮3分钟；','淋蛋液、勾芡；','加醋、白胡椒粉、香油。'],tip:'醋最后放酸味才足。'},
+  {id:22,emoji:'🥣',name:'皮蛋瘦肉粥',cat:'主食',diff:'中等',time:'40分钟',ingredients:[{n:'大米',a:'1杯'},{n:'皮蛋',a:'2个'},{n:'猪里脊',a:'100g'},{n:'姜'},{n:'葱花',a:'少许',req:false},{n:'盐'}],
+   steps:['大米加水煮开转小火；','里脊切丝腌制备用，皮蛋切丁；','粥煮至粘稠，下皮蛋和肉丝；','煮5分钟，加盐、葱花。'],tip:'大米提前泡半小时更快开花。'},
+  {id:23,emoji:'🧄',name:'蒜香鸡翅',cat:'硬菜',diff:'简单',time:'30分钟',ingredients:[{n:'鸡翅',a:'8个'},{n:'蒜',a:'5瓣'},{n:'生抽'},{n:'料酒'},{n:'蜂蜜',a:'1勺',req:false},{n:'食用油'}],
+   steps:['鸡翅加蒜末、生抽、料酒腌20分钟；','平底锅煎至两面金黄；','刷蜂蜜再煎1分钟。'],tip:'小火慢煎，蒜不易糊。'},
+  {id:24,emoji:'🥬',name:'香菇青菜',cat:'快手菜',diff:'简单',time:'10分钟',ingredients:[{n:'上海青',a:'1把'},{n:'香菇',a:'4朵'},{n:'蒜'},{n:'蚝油'},{n:'食用油'}],
+   steps:['上海青、香菇洗净，香菇切片；','热油爆香蒜，下香菇炒软；','下青菜大火炒，加蚝油翻匀。'],tip:'先炒梗再炒叶，受热更均匀。'},
+  {id:25,emoji:'🍤',name:'油焖大虾',cat:'硬菜',diff:'简单',time:'20分钟',ingredients:[{n:'鲜虾',a:'500g'},{n:'番茄酱',a:'1勺'},{n:'糖'},{n:'姜'},{n:'蒜'},{n:'生抽'}],
+   steps:['虾剪去虾须，挑虾线；','下锅煎至虾身变红；','加姜蒜、番茄酱、糖、生抽；','加少许水焖3分钟收汁。'],tip:'按压虾头出虾油更香。'},
+  {id:26,emoji:'🍆',name:'地三鲜',cat:'下饭菜',diff:'中等',time:'20分钟',ingredients:[{n:'茄子',a:'1个'},{n:'土豆',a:'1个'},{n:'青椒',a:'1个'},{n:'蒜'},{n:'生抽'},{n:'糖'},{n:'淀粉'},{n:'食用油'}],
+   steps:['茄子、土豆、青椒切块；','土豆、茄子分别煎软；','爆香蒜，倒回食材；','淋生抽糖汁勾芡翻炒。'],tip:'茄子撒盐腌一下少吸油。'},
+  {id:27,emoji:'🫛',name:'干煸豆角',cat:'下饭菜',diff:'中等',time:'15分钟',ingredients:[{n:'豆角',a:'300g'},{n:'猪肉末',a:'100g'},{n:'蒜'},{n:'干辣椒',a:'适量',req:false},{n:'食用油'},{n:'盐'}],
+   steps:['豆角择段，中小火煸出虎皮；','下肉末炒酥；','加蒜、干辣椒、盐炒匀。'],tip:'豆角一定煸熟，防夹生。'},
+  {id:28,emoji:'🍤',name:'清炒虾仁',cat:'快手菜',diff:'简单',time:'12分钟',ingredients:[{n:'虾仁',a:'200g'},{n:'黄瓜',a:'半根'},{n:'胡萝卜',a:'半根'},{n:'蒜'},{n:'盐'},{n:'食用油'},{n:'淀粉'}],
+   steps:['虾仁加少许盐、淀粉抓匀；','爆香蒜，下虾仁炒至变色；','下黄瓜、胡萝卜丁翻炒；','加盐调味出锅。'],tip:'虾仁大火快炒才嫩。'}
+];
+/* ===== 状态 ===== */
+const LS_KEY = 'fridge-ingredients-v1';
+const LS_STAPLES = 'fridge-staples-v1';
+let ingredients = loadIngredients();
+let assumeStaples = localStorage.getItem(LS_STAPLES) !== '0';
+
+const CAT_EMOJI = {'蔬菜':'🥬','肉类':'🥩','禽蛋':'🥚','水产':'🐟','豆制品':'🧈','主食':'🍚','调料':'🧂','水果':'🍎','其他':'📦'};
+const STORE_META = {'chill':{label:'冰箱冷藏',emoji:'🧊'},'freeze':{label:'冰箱冷冻',emoji:'❄️'},'room':{label:'常温',emoji:'🏠'}};
+
+function norm(s){return (s||'').replace(/\s+/g,'');}
+
+function localISO(d){const y=d.getFullYear();const m=String(d.getMonth()+1).padStart(2,'0');const day=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+day;}
+function addDaysISO(n){const d=new Date();d.setDate(d.getDate()+n);return localISO(d);}
+
+function seed(){
+  if(localStorage.getItem(LS_KEY)) return JSON.parse(localStorage.getItem(LS_KEY));
+  const s=[
+    {id:'s1',name:'西红柿',cat:'蔬菜',exp:addDaysISO(5),qty:'2个',store:'chill',shelf:5},
+    {id:'s2',name:'鸡蛋',cat:'禽蛋',exp:addDaysISO(12),qty:'6个',store:'chill',shelf:12},
+    {id:'s3',name:'土豆',cat:'蔬菜',exp:'',qty:'3个',store:'room',shelf:''},
+    {id:'s4',name:'鸡翅',cat:'禽蛋',exp:addDaysISO(2),qty:'8个',store:'freeze',shelf:2},
+    {id:'s5',name:'黄瓜',cat:'蔬菜',exp:addDaysISO(4),qty:'2根',store:'chill',shelf:4}
+  ];
+  localStorage.setItem(LS_KEY, JSON.stringify(s));
+  return s;
+}
+function loadIngredients(){
+  const raw = localStorage.getItem(LS_KEY);
+  let arr = null;
+  if(raw){try{arr = JSON.parse(raw);}catch(e){}}
+  if(!arr) arr = seed();
+  const seedStore = {s1:'chill', s2:'chill', s3:'room', s4:'freeze', s5:'chill'};
+  arr = arr.map(i=>({...i, store: i.store || seedStore[i.id] || 'chill', shelf: i.shelf || ''}));
+  localStorage.setItem(LS_KEY, JSON.stringify(arr));
+  return arr;
+}
+function save(){localStorage.setItem(LS_KEY, JSON.stringify(ingredients));}
+function saveStaples(){localStorage.setItem(LS_STAPLES, assumeStaples?'1':'0');}
+
+function ownedSet(){
+  return new Set(ingredients.map(i=>norm(i.name)));
+}
+
+/* ===== 菜谱匹配 ===== */
+function recipeStatus(r){
+  const owned = ownedSet();
+  const missing = [];
+  let have = 0, req = 0, optOwned = 0;
+  r.ingredients.forEach(ing=>{
+    const isOwned = owned.has(norm(ing.n));
+    const isStaple = STAPLES.has(ing.n);
+    const eff = isOwned || (isStaple && assumeStaples);
+    if(ing.req === false){
+      if(eff) optOwned++;
+    }else{
+      req++;
+      if(eff) have++;
+      else missing.push(ing.n);
+    }
+  });
+  return {missing, have, req, optOwned, can: missing.length===0};
+}
+
+/* ===== 渲染：食材 ===== */
+function daysLeft(exp){
+  if(!exp) return null;
+  const [y,m,d] = exp.split('-').map(Number);
+  const e = new Date(y,m-1,d);
+  const t = new Date(); t.setHours(0,0,0,0);
+  return Math.round((e-t)/86400000);
+}
+function expiryBadge(i){
+  if(!i.exp) return '<span class="badge gray">无保质期</span>';
+  const d = daysLeft(i.exp);
+  if(d<0) return '<span class="badge danger">已过期'+(-d)+'天</span>';
+  if(d===0) return '<span class="badge danger">今天到期</span>';
+  if(d<=3) return '<span class="badge warn">'+d+'天后到期</span>';
+  return '<span class="badge ok">'+d+'天后到期</span>';
+}
+function renderIngredients(filter){
+  const box = document.getElementById('ingList');
+  const q = norm(filter||'');
+  const list = ingredients.filter(i=>norm(i.name).includes(q));
+  if(!list.length){
+    box.innerHTML = '<div class="empty"><span class="big">🧊</span>'+(ingredients.length?'没有匹配的食材':'冰箱还是空的，先添加几样食材吧')+'</div>';
+    return;
+  }
+  box.innerHTML = list.map(i=>{
+    const emoji = CAT_EMOJI[i.cat]||'📦';
+    const st = STORE_META[i.store]||STORE_META.chill;
+    const meta = [st.emoji+' '+esc(st.label), i.cat, i.qty].filter(Boolean).join(' · ');
+    return '<div class="ing">'+
+      '<div class="dot">'+emoji+'</div>'+
+      '<div class="info"><div class="name">'+esc(i.name)+'</div><div class="meta">'+meta+'</div></div>'+
+      expiryBadge(i)+
+      '<button class="btn btn-danger btn-sm" data-del="'+i.id+'">删</button>'+
+    '</div>';
+  }).join('');
+}
+
+/* ===== 渲染：推荐 ===== */
+function renderSuggest(){
+  const box = document.getElementById('suggestList');
+  const sorted = RECIPES.map(r=>({r, s:recipeStatus(r)}))
+    .sort((a,b)=> a.s.missing.length - b.s.missing.length || b.s.have - a.s.have || b.s.optOwned - a.s.optOwned);
+  if(!ingredients.length){
+    box.innerHTML = '<div class="empty"><span class="big">🥗</span>先添加食材，我就能推荐你能做的菜啦</div>';
+    return;
+  }
+  box.innerHTML = sorted.map(({r,s})=>{
+    let badge;
+    if(s.can) badge = '<span class="score-badge done">✅ 可做</span>';
+    else if(s.missing.length<=2) badge = '<span class="score-badge short">差'+s.missing.length+'样</span>';
+    else badge = '<span class="score-badge far">差'+s.missing.length+'样</span>';
+    const missHtml = s.missing.map(n=>'<span class="miss-chip">'+esc(n)+'</span>').join('');
+    const bar = s.req ? '已有 '+s.have+'/'+s.req+' 主料'+(s.optOwned?' · 配料齐':'') : '';
+    return '<div class="rec" data-id="'+r.id+'">'+
+      '<div class="emoji">'+r.emoji+'</div>'+
+      '<div class="body">'+
+        '<div class="rname">'+r.name+'</div>'+
+        '<div class="rmeta">'+r.cat+' · '+r.diff+' · '+r.time+'</div>'+
+        (s.can?'':'<div class="missing">还缺：'+missHtml+'</div>')+
+        '<div class="matchbar">'+bar+'</div>'+
+      '</div>'+badge+
+    '</div>';
+  }).join('');
+}
+
+/* ===== 渲染：菜谱库 ===== */
+function renderLibrary(filter, cat){
+  const box = document.getElementById('libList');
+  const q = norm(filter||'');
+  const list = RECIPES.filter(r=>{
+    if(cat && cat!=='全部' && r.cat!==cat) return false;
+    if(q){
+      const hay = norm(r.name + r.ingredients.map(x=>x.n).join(''));
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  if(!list.length){
+    box.innerHTML = '<div class="empty"><span class="big">🔍</span>没找到相关菜谱</div>';
+    return;
+  }
+  box.innerHTML = list.map(r=>{
+    const s = recipeStatus(r);
+    return '<div class="rec" data-id="'+r.id+'">'+
+      '<div class="emoji">'+r.emoji+'</div>'+
+      '<div class="body">'+
+        '<div class="rname">'+r.name+'</div>'+
+        '<div class="rmeta">'+r.cat+' · '+r.diff+' · '+r.time+'</div>'+
+        '<div class="missing">'+(s.can?'<span class="have-chip">✅ 材料齐全</span>':'<span class="miss-chip">还缺 '+s.missing.length+' 样</span>')+'</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+function renderLibFilters(){
+  const cats = ['全部', ...new Set(RECIPES.map(r=>r.cat))];
+  document.getElementById('libFilters').innerHTML = cats.map((c,i)=>
+    '<button class="fbtn'+(i===0?' active':'')+'" data-cat="'+esc(c)+'">'+esc(c)+'</button>').join('');
+}
+
+/* ===== 详情弹窗 ===== */
+function openModal(id){
+  const r = RECIPES.find(x=>x.id===id);
+  if(!r) return;
+  const owned = ownedSet();
+  const lines = r.ingredients.map(ing=>{
+    const eff = owned.has(norm(ing.n)) || (STAPLES.has(ing.n) && assumeStaples);
+    const cls = eff ? 'have' : 'miss';
+    const star = STAPLES.has(ing.n) ? ' <span class="tag" style="font-size:10px">常备</span>' : '';
+    const mk = eff ? '✅' : '❌';
+    return '<div class="ing-line '+cls+'">'+mk+' <b>'+esc(ing.n)+'</b>'+star+(ing.req===false?'<span class="tag" style="font-size:10px">可选</span>':'')+'<span class="amt">'+(ing.a||'')+'</span></div>';
+  }).join('');
+  const steps = r.steps.map((s,i)=>'<li>'+esc(s)+'</li>').join('');
+  document.getElementById('modalContent').innerHTML =
+    '<h2>'+r.emoji+' '+esc(r.name)+'</h2>'+
+    '<div class="lead"><span class="tag">'+r.cat+'</span><span class="tag">难度：'+r.diff+'</span><span class="tag">⏱ '+r.time+'</span></div>'+
+    '<div class="h3">📋 所需食材</div><div>'+lines+'</div>'+
+    '<div class="steps h3">👨‍🍳 做法</div><ol>'+steps+'</ol>'+
+    (r.tip?'<div class="tip">💡 '+esc(r.tip)+'</div>':'');
+  document.getElementById('modalBg').classList.remove('hidden');
+  document.body.style.overflow='hidden';
+}
+function closeModal(){
+  document.getElementById('modalBg').classList.add('hidden');
+  document.body.style.overflow='';
+}
+
+/* ===== 统计 & 总刷新 ===== */
+function updateStats(){
+  document.getElementById('statCount').textContent = ingredients.length;
+  const cook = RECIPES.filter(r=>recipeStatus(r).can).length;
+  document.getElementById('statCook').textContent = cook;
+  const soon = ingredients.filter(i=>{const d=daysLeft(i.exp);return d!==null && d<=3;}).length;
+  document.getElementById('statSoon').textContent = soon;
+}
+function renderAll(){
+  renderIngredients(document.getElementById('ingFilter').value);
+  renderSuggest();
+  renderLibrary(document.getElementById('libSearch').value, currentLibCat);
+  updateStats();
+}
+
+/* ===== 工具 ===== */
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+function exportData(){
+  const blob = new Blob([JSON.stringify({ingredients, assumeStaples}, null, 2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '冰箱食材清单.json';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+function importData(){
+  const inp = document.createElement('input');
+  inp.type='file'; inp.accept='application/json';
+  inp.onchange=()=>{
+    const f = inp.files[0]; if(!f) return;
+    const rd = new FileReader();
+    rd.onload=()=>{
+      try{
+        const data = JSON.parse(rd.result);
+        if(!Array.isArray(data.ingredients)) throw new Error('bad');
+        ingredients = data.ingredients;
+        assumeStaples = data.assumeStaples !== false;
+        save(); saveStaples();
+        document.getElementById('assumeStaples').checked = assumeStaples;
+        renderAll();
+      }catch(e){alert('导入失败：文件格式不对');}
+    };
+    rd.readAsText(f);
+  };
+  inp.click();
+}
+
+/* ===== 事件绑定 ===== */
+let currentLibCat = '全部';
+
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const t = btn.dataset.tab;
+    ['ingredients','suggest','library'].forEach(k=>{
+      document.getElementById('panel-'+k).classList.toggle('hidden', k!==t);
+    });
+  });
+});
+
+document.getElementById('addBtn').addEventListener('click',()=>{
+  const name = document.getElementById('ingInput').value.trim();
+  if(!name){ document.getElementById('ingInput').focus(); return; }
+  const cat = document.getElementById('catSelect').value;
+  const store = document.getElementById('storeSelect').value;
+  const shelf = document.getElementById('shelfInput').value;
+  const expInput = document.getElementById('expInput').value;
+  let exp = expInput;
+  if(!exp && shelf){ exp = addDaysISO(parseInt(shelf,10)||0); }
+  const exist = ingredients.find(i=>norm(i.name)===norm(name));
+  if(exist){ exist.cat=cat; exist.store=store; exist.shelf=shelf; exist.exp=exp; }
+  else ingredients.push({id:'g'+Date.now()+Math.floor(Math.random()*1000), name, cat, exp, qty:'', store, shelf});
+  save();
+  document.getElementById('ingInput').value='';
+  document.getElementById('shelfInput').value='';
+  document.getElementById('expInput').value='';
+  renderAll();
+});
+document.getElementById('ingInput').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('addBtn').click(); });
+
+document.getElementById('ingList').addEventListener('click',e=>{
+  const b = e.target.closest('[data-del]');
+  if(b){ ingredients = ingredients.filter(i=>i.id!==b.dataset.del); save(); renderAll(); }
+});
+document.getElementById('ingFilter').addEventListener('input',e=>renderIngredients(e.target.value));
+
+document.getElementById('assumeStaples').addEventListener('change',e=>{
+  assumeStaples = e.target.checked; saveStaples(); renderAll();
+});
+document.getElementById('exportBtn').addEventListener('click',exportData);
+document.getElementById('importBtn').addEventListener('click',importData);
+
+document.addEventListener('click',e=>{
+  const rec = e.target.closest('[data-id]');
+  if(rec && !e.target.closest('#libFilters')) openModal(+rec.dataset.id);
+});
+document.getElementById('libSearch').addEventListener('input',e=>renderLibrary(e.target.value, currentLibCat));
+document.getElementById('libFilters').addEventListener('click',e=>{
+  const b = e.target.closest('[data-cat]');
+  if(b){
+    currentLibCat = b.dataset.cat;
+    document.querySelectorAll('#libFilters .fbtn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    renderLibrary(document.getElementById('libSearch').value, currentLibCat);
+  }
+});
+
+document.getElementById('modalClose').addEventListener('click',closeModal);
+document.getElementById('modalBg').addEventListener('click',e=>{ if(e.target.id==='modalBg') closeModal(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
+
+/* ===== 建议词 ===== */
+document.getElementById('ingSuggest').innerHTML =
+  [...new Set(RECIPES.flatMap(r=>r.ingredients.map(i=>i.n)))].map(n=>'<option value="'+esc(n)+'">').join('');
+
+/* ===== 初始化 ===== */
+document.getElementById('assumeStaples').checked = assumeStaples;
+renderLibFilters();
+renderAll();
+</script>
+</body>
+</html>
